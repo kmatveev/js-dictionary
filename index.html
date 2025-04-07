@@ -1,0 +1,180 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Поиск по словарю</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .output {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            min-height: 50px;
+        }
+        .common {
+            margin-top: 10px;
+        }
+        button {
+            padding: 8px 12px;
+            margin-right: 5px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:disabled,button[disabled] {
+            background-color: #cccccc;
+            color: #666666;
+            cursor: not-allowed;
+        }
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .button-group {
+            display: flex;
+        }
+
+    </style>
+</head>
+<body>
+    <input type="text" id="inputField" placeholder="Введите текст">
+    <div id="output" class="common output"></div>
+    <div class="common button-container">
+        <div class="button-group">
+            <button id="editButton">Редактировать</button>
+            <button id="storeButton">Сохранить</button>
+        </div>
+        <div class="button-group">
+            <button id="importButton">Импорт</button>
+            <button id="exportButton">Экспорт</button>
+        </div>
+    </div>
+    <div class="common">
+        <input type="text" id="editField">
+    </div>
+
+    <script>
+        var dictionary = { "testKey":"testValue" };
+
+        const inputField = document.getElementById('inputField');
+        const output = document.getElementById('output');
+        const editButton = document.getElementById('editButton');
+        const storeButton = document.getElementById('storeButton');
+        const editField = document.getElementById('editField');
+
+        var editEnabled = true; // need to be true initially because styles of edit controls corresponds to enabled state
+
+        var enableEdit = function() {
+            if (!editEnabled) {
+                if (inputField.value.length > 0) {
+                    editEnabled = true;
+                    editField.style.display = 'block';
+                    storeButton.disabled = false;
+                    editField.value = output.textContent;
+                }
+            }
+        };
+        var disableEdit = function() {
+            if (editEnabled) {
+                editEnabled = false;
+                editField.style.display = 'none';
+                storeButton.disabled = true;
+            }
+        };
+
+        disableEdit();
+
+        inputField.addEventListener('input', function() {
+            disableEdit();
+            const searchTerm = inputField.value;
+            if (searchTerm.length == 0) {
+                output.textContent = '';
+            } else {
+                const matchingKeys = Object.keys(dictionary).filter(key => key == searchTerm);
+
+                if (matchingKeys.length > 0) {
+                    output.textContent = dictionary[matchingKeys[0]];
+                } else {
+                    output.textContent = '';
+                }
+            }
+        });
+
+        editButton.addEventListener('click', function() { 
+            if (editEnabled) { 
+                disableEdit();
+                inputField.focus(); 
+            } else {
+                enableEdit();
+                editField.focus();
+            } 
+        });
+        storeButton.addEventListener('click', function() {
+            if (editEnabled) {
+                const newKey = inputField.value;
+                if (newKey) {
+                    const newValue = editField.value;
+                    if (newValue) {
+                        dictionary[newKey] = newValue;
+                        output.textContent = newValue;
+                    } else {
+                        delete dictionary[newKey];
+                    }
+                }
+            }
+            inputField.focus();
+            disableEdit();
+        });
+
+        document.getElementById('importButton').addEventListener('click', function() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        const jsonData = JSON.parse(event.target.result);
+                        dictionary = jsonData;
+                    } catch (error) {
+                        console.error('Ошибка при парсинге JSON:', error);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+            document.body.removeChild(input);
+        });
+
+        document.getElementById('exportButton').addEventListener('click', function() {
+            try {
+                const blob = new Blob([JSON.stringify(dictionary, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'export.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } catch (error) {
+                console.error('Ошибка при парсинге JSON:', error);
+            }
+        });
+
+    </script>
+</body>
+</html>
